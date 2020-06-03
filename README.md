@@ -1,5 +1,5 @@
-# Deep MPC 
-Prototype code for the paper: Constrained Physics-Informed Deep Learning forStable System Identification and Control of Unknown Linear Systems
+# deps_arXiv2020
+Prototype code for the paper: Constrained Physics-Informed Deep Learning for Stable System Identification and Control of Unknown Linear Systems
 
 ## Dependencies: Python Libraries
 See environment.yml to reproduce the Conda environment for running experiments. For GPU capabilities 
