@@ -275,8 +275,8 @@ load model parameters of trained policy from Section 3.7.
 """ 
 if replicate_paper:
     model = torch.load('Trained_DeepMPCPolicy_N_'+str(N)+'_sec_3_7.pt')
-else:
-    torch.save(model, 'Trained_DeepMPCPolicy_N_'+str(N)+'_sec_3_7.pt')
+# else:
+#     torch.save(model, 'Trained_DeepMPCPolicy_N_'+str(N)+'_sec_3_7.pt')
 
 
 """
