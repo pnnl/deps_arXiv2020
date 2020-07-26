@@ -317,7 +317,7 @@ Q_dx_ud_sysID = 10
 """
 Joint System ID and Policy Optimization Training Loop  using Algorithm 2
 """ 
-epochs = 40000
+epochs = 30000
 losses = []
 
 for i in range(epochs):

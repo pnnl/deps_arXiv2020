@@ -7,15 +7,15 @@ def norm_max1(a):
     # Normalised [0,1]
     return a/np.max(a)
 
-labels = ['DLMPC', 'MPC', 'RMPC', 'SMPC', 'LQR', 'LQI']
+labels = ['DLMPC', 'MPC', 'RMPC', 'SMPC', 'LQR', 'LQI', 'PPO2', 'A2C', 'ACKTR']
 # normalized metric nominal simulation
-MSE_ref_nominal = norm_max1(np.asarray([1.244, 1.398, 1.405, 1.398, 2.024, 1.954]))
-MA_ene_nominal = norm_max1(np.asarray([1111, 897, 899, 897, 758, 899]))
-MA_con_nominal = norm_max1(np.asarray([0.000, 0.000, 0.000, 0.000, 5.574, 1.893]))
+MSE_ref_nominal = norm_max1(np.asarray([1.244, 1.398, 1.405, 1.398, 2.024, 1.954, 16.978, 10.682, 9.556]))
+MA_ene_nominal = norm_max1(np.asarray([1111, 897, 899, 897, 758, 899, 531, 732, 1496]))
+MA_con_nominal = norm_max1(np.asarray([0.000, 0.000, 0.000, 0.000, 5.574, 1.893, 2.525, 1.608,  0.557]))
 # normalized metric simulation with parametric and additive uncertainties
-MSE_ref_uncertain = norm_max1(np.asarray([2.355, 3.711, 2.839, 3.579, 2.711, 4.957]))
-MA_ene_uncertain = norm_max1(np.asarray([1139, 866, 836, 856, 883, 676]))
-MA_con_uncertain = norm_max1(np.asarray([0.000, 1.106, 0.066, 0.572, 7.567, 5.346]))
+MSE_ref_uncertain = norm_max1(np.asarray([2.355, 3.711, 2.839, 3.579, 2.711, 4.957, 27.885, 14.682, 15.473]))
+MA_ene_uncertain = norm_max1(np.asarray([1139, 866, 836, 856, 883, 676, 526, 731, 1510]))
+MA_con_uncertain = norm_max1(np.asarray([0.000, 1.106, 0.066, 0.572, 7.567, 5.346, 3.546, 1.883, 0.768]))
 
 x = np.arange(len(labels))  # the label locations
 width = 0.30  # the width of the bars
