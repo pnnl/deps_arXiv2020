@@ -38,15 +38,17 @@ def arg_dpc_problem(prefix=''):
            help="prediction horizon.")
     gp.add("-Qx", type=float, default=1.0,
            help="state weight.")
-    gp.add("-Qu", type=float, default=10.0,
+    gp.add("-Qu", type=float, default=1.0,
            help="control action weight.")
+    gp.add("-Qn", type=float, default=0.0,
+           help="terminal penalty weight.")
     gp.add("-Q_sub", type=float, default=0.0,
            help="regularization weight.")
     gp.add("-Q_con_x", type=float, default=10.0,
            help="state constraints penalty weight.")
-    gp.add("-Q_con_u", type=float, default=100.0,
+    gp.add("-Q_con_u", type=float, default=20.0,
            help="Input constraints penalty weight.")
-    gp.add("-nx_hidden", type=int, default=10,
+    gp.add("-nx_hidden", type=int, default=20,
            help="Number of hidden states")
     gp.add("-n_layers", type=int, default=4,
            help="Number of hidden layers")
@@ -146,6 +148,8 @@ if __name__ == "__main__":
                                     arg_dpc_problem()])
     args, grps = parser.parse_arg_groups()
 
+    args.bias = True
+
     # problem dimensions
     nx = 2
     ny = 2
@@ -157,6 +161,8 @@ if __name__ == "__main__":
     umax = 1
     xmin = -10
     xmax = 10
+    xN_min = -1.0
+    xN_max = 1.0
 
     """
     # # #  dataset 
@@ -168,7 +174,7 @@ if __name__ == "__main__":
         "Y_min": xmin*np.ones([nsim, nx]),
         "U_max": umax*np.ones([nsim, nu]),
         "U_min": umin*np.ones([nsim, nu]),
-        "Y": 10*np.random.randn(nsim, nx),
+        "Y": 3*np.random.randn(nsim, nx),
         "U": np.random.randn(nsim, nu),
     }
     dataset = Dataset(nsim=nsim, ninit=0, norm=args.norm, nsteps=args.nsteps,
@@ -225,6 +231,7 @@ if __name__ == "__main__":
     """
     # # #  DPC objectives and constraints
     """
+    # objectives
     regulation_loss = Objective(
         [f'Y_pred_{dynamics_model.name}'],
         lambda x: F.mse_loss(x, x),
@@ -237,9 +244,11 @@ if __name__ == "__main__":
         weight=args.Qu,
         name="u^T*Qu*u loss",
     )
+    # regularization
     regularization = Objective(
         [f"reg_error_{policy.name}"], lambda reg: reg, weight=args.Q_sub, name="reg_loss",
     )
+    # constraints
     state_lower_bound_penalty = Objective(
         [f'Y_pred_{dynamics_model.name}', "Y_minf"],
         lambda x, xmin: torch.mean(F.relu(-x + xmin)),
@@ -251,6 +260,19 @@ if __name__ == "__main__":
         lambda x, xmax: torch.mean(F.relu(x - xmax)),
         weight=args.Q_con_x,
         name="state_upper_bound",
+    )
+    # TODO: generalize terminal penalty for N step ahead policy
+    terminal_lower_bound_penalty = Objective(
+        [f'Y_pred_{dynamics_model.name}', "Y_minf"],
+        lambda x, xmin: torch.mean(F.relu(-x + xN_min)),
+        weight=args.Qn,
+        name="terminl_lower_bound",
+    )
+    terminal_upper_bound_penalty = Objective(
+        [f'Y_pred_{dynamics_model.name}', "Y_maxf"],
+        lambda x, xmax: torch.mean(F.relu(x - xN_max)),
+        weight=args.Qn,
+        name="terminl_upper_bound",
     )
     inputs_lower_bound_penalty = Objective(
         [f"U_pred_{policy.name}", "U_minf"],
@@ -271,6 +293,8 @@ if __name__ == "__main__":
         state_upper_bound_penalty,
         inputs_lower_bound_penalty,
         inputs_upper_bound_penalty,
+        terminal_lower_bound_penalty,
+        terminal_upper_bound_penalty,
     ]
 
     """
