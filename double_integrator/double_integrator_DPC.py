@@ -8,6 +8,8 @@ import torch.nn.functional as F
 import slim
 import psl
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import cm
 
 from neuromancer.activations import activations
 from neuromancer import blocks, estimators, dynamics
@@ -21,6 +23,7 @@ from neuromancer.datasets import Dataset
 from neuromancer.loggers import BasicLogger, MLFlowLogger
 
 
+
 def arg_dpc_problem(prefix=''):
     """
     Command line parser for DPC problem definition arguments
@@ -31,39 +34,105 @@ def arg_dpc_problem(prefix=''):
     """
     parser = arg.ArgParser(prefix=prefix, add_help=False)
     gp = parser.group("DPC")
-    gp.add("-nsteps", type=int, default=10,
+    gp.add("-nsteps", type=int, default=1,
            help="prediction horizon.")
     gp.add("-Qx", type=float, default=1.0,
            help="state weight.")
     gp.add("-Qu", type=float, default=10.0,
            help="control action weight.")
-    gp.add("-Q_sub", type=float, default=0.1,
+    gp.add("-Q_sub", type=float, default=0.0,
            help="regularization weight.")
-    gp.add("-Q_con_x", type=float, default=0.0,
+    gp.add("-Q_con_x", type=float, default=10.0,
            help="state constraints penalty weight.")
-    gp.add("-Q_con_u", type=float, default=0.0,
+    gp.add("-Q_con_u", type=float, default=100.0,
            help="Input constraints penalty weight.")
     gp.add("-nx_hidden", type=int, default=10,
            help="Number of hidden states")
-    gp.add("-n_layers", type=int, default=2,
+    gp.add("-n_layers", type=int, default=4,
            help="Number of hidden layers")
     gp.add("-bias", action="store_true",
            help="Whether to use bias in the neural network block component models.")
-    gp.add("-norm", nargs="+", default=["U", "Y"], choices=["U", "D", "Y", "X"],
+    gp.add("-norm", nargs="+", default=[], choices=["U", "D", "Y", "X"],
                help="List of sequences to max-min normalize")
     gp.add("-data_seed", type=int, default=408,
            help="Random seed used for simulated data")
-    gp.add("-epochs", type=int, default=100,
+    gp.add("-epochs", type=int, default=1000,
            help='Number of training epochs')
     gp.add("-lr", type=float, default=0.001,
            help="Step size for gradient descent.")
-    gp.add("-patience", type=int, default=20,
+    gp.add("-patience", type=int, default=100,
            help="How many epochs to allow for no improvement in eval metric before early stopping.")
     gp.add("-warmup", type=int, default=10,
            help="Number of epochs to wait before enacting early stopping policy.")
     # gp.add("-verbosity", type=int, default=1,
     #        help="How many epochs in between status updates")
     return parser
+
+
+def plot_policy(net, xmin=-5, xmax=5):
+    x = torch.arange(xmin, xmax, 0.1)
+    y = torch.arange(xmin, xmax, 0.1)
+    xx, yy = torch.meshgrid(x, y)
+    features = torch.stack([xx, yy]).transpose(0, 2)
+    uu = net(features)
+    plot_u = uu.detach().numpy()[:,:,0]
+
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+    surf = ax.plot_surface(xx.detach().numpy(), yy.detach().numpy(), plot_u,
+                           cmap=cm.coolwarm,
+                           linewidth=0, antialiased=False)
+    return
+
+
+def lpv_batched(fx, x):
+    """ LPV refactor of DNN
+    :param fx:
+    :param x:
+    :return:
+    """
+    x_layer = x
+
+    Aprime_mats = []
+    activation_mats = []
+    bprimes = []
+
+    for nlin, lin in zip(fx.nonlin, fx.linear):
+        A = lin.effective_W()  # layer weight
+
+        b = lin.bias if lin.bias is not None else torch.zeros(A.shape[-1])
+        Ax = torch.matmul(x_layer, A) + b  # affine transform
+
+        zeros = Ax == 0
+        lambda_h = nlin(Ax) / Ax  # activation scaling
+        lambda_h[zeros] = 0.
+
+        lambda_h_mats = [torch.diag(v) for v in lambda_h]
+        activation_mats += lambda_h_mats
+        lambda_h_mats = torch.stack(lambda_h_mats)
+
+        x_layer = Ax * lambda_h
+
+        Aprime = torch.matmul(A, lambda_h_mats)
+        # Aprime = A * lambda_h
+        Aprime_mats += [Aprime]
+
+        bprime = lambda_h * b
+        bprimes += [bprime]
+
+    # network-wise parameter varying linear map:  A* = A'_L ... A'_1
+    Astar = Aprime_mats[0]
+    bstar = bprimes[0] # b x nx
+    for Aprime, bprime in zip(Aprime_mats[1:], bprimes[1:]):
+        Astar = torch.bmm(Astar, Aprime)
+        bstar = torch.bmm(bstar.unsqueeze(-2), Aprime).squeeze(-2) + bprime
+
+    return Astar, bstar, Aprime_mats, bprimes, activation_mats
+
+
+
+
+def check_stability(A, B, net):
+    return
 
 
 
@@ -162,6 +231,12 @@ if __name__ == "__main__":
         weight=args.Qx,
         name="x^T*Qx*x loss",
     )
+    action_loss = Objective(
+        [f"U_pred_{policy.name}"],
+        lambda x: F.mse_loss(x, x),
+        weight=args.Qu,
+        name="u^T*Qu*u loss",
+    )
     regularization = Objective(
         [f"reg_error_{policy.name}"], lambda reg: reg, weight=args.Q_sub, name="reg_loss",
     )
@@ -190,7 +265,7 @@ if __name__ == "__main__":
         name="input_upper_bound",
     )
 
-    objectives = [regularization, regulation_loss]
+    objectives = [regularization, regulation_loss, action_loss]
     constraints = [
         state_lower_bound_penalty,
         state_upper_bound_penalty,
@@ -214,6 +289,7 @@ if __name__ == "__main__":
     args.savedir = 'test_control'
     args.verbosity = 1
     log_constructor = MLFlowLogger if args.logger == 'mlflow' else BasicLogger
+
     metrics = ["nstep_dev_loss", "loop_dev_loss", "best_loop_dev_loss",
                "nstep_dev_ref_loss", "loop_dev_ref_loss"]
     logger = log_constructor(args=args, savedir=args.savedir, verbosity=args.verbosity, stdout=metrics)
@@ -245,8 +321,15 @@ if __name__ == "__main__":
     )
     # Train control policy
     best_model = trainer.train()
-    best_outputs = trainer.evaluate(best_model)
-    plots = visualizer.eval(best_outputs)
-    # Logger
-    logger.log_artifacts(plots)
-    logger.clean_up()
+
+    # TODO: generalize to plot N-step ahead policy
+    plot_policy(policy.net)
+
+    # TODO: eigenvalue plots + closed loop trajectories
+    # simple scripts or check simulator
+
+    # best_outputs = trainer.evaluate(best_model)
+    # plots = visualizer.eval(best_outputs)
+    # # Logger
+    # logger.log_artifacts(plots)
+    # logger.clean_up()
