@@ -8,10 +8,11 @@ clear all
 % Model data
 A = [1.2 1;0 1];
 B = [1;0.5];  
-C = [1 1];
+% C = [1 1];
+C = [1 0; 0 1];
 nx = 2; % Number of states
 nu = 1; % Number of inputs
-ny = 21; % Number of outputs
+ny = 2; % Number of outputs
 % Prediction horizon
 N = 10;
 
@@ -25,7 +26,7 @@ xmax = 10;
 
 % objective weights
 Qy = 1;
-Qu = 5;
+Qu = 1;
 
 % variables
 x = sdpvar(nx, N+1, 'full');        % MPC parameter
@@ -82,7 +83,7 @@ end
 
 
 % initial conditions
-x0 = 2*ones(nx,1);
+x0 = 1.5*ones(nx,1);
 Nsim = 50;
 Xsim = x0;
 Usim = [];
@@ -132,6 +133,9 @@ for i=1:length(X1)
 end
 figure
 s = surf(X1,X2,U)
+xlabel('x_2')
+ylabel('x_1')
+zlabel('u')
 s.EdgeColor = 'none';
 
 

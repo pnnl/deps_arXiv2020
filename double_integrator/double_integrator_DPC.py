@@ -9,7 +9,13 @@ import slim
 import psl
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from matplotlib import cm
+import seaborn as sns
+DENSITY_PALETTE = sns.color_palette("crest_r", as_cmap=True)
+DENSITY_FACECLR = DENSITY_PALETTE(0.01)
+sns.set_theme(style="white")
+
 
 from neuromancer.activations import activations
 from neuromancer import blocks, estimators, dynamics
@@ -21,6 +27,7 @@ from neuromancer import policies
 import neuromancer.arg as arg
 from neuromancer.datasets import Dataset
 from neuromancer.loggers import BasicLogger, MLFlowLogger
+
 
 
 
@@ -40,7 +47,7 @@ def arg_dpc_problem(prefix=''):
            help="state weight.")
     gp.add("-Qu", type=float, default=1.0,
            help="control action weight.")
-    gp.add("-Qn", type=float, default=0.0,
+    gp.add("-Qn", type=float, default=1.0,
            help="terminal penalty weight.")
     gp.add("-Q_sub", type=float, default=0.0,
            help="regularization weight.")
@@ -71,7 +78,7 @@ def arg_dpc_problem(prefix=''):
     return parser
 
 
-def plot_policy(net, xmin=-5, xmax=5):
+def plot_policy(net, xmin=-5, xmax=5, save_path=None):
     x = torch.arange(xmin, xmax, 0.1)
     y = torch.arange(xmin, xmax, 0.1)
     xx, yy = torch.meshgrid(x, y)
@@ -81,9 +88,55 @@ def plot_policy(net, xmin=-5, xmax=5):
 
     fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
     surf = ax.plot_surface(xx.detach().numpy(), yy.detach().numpy(), plot_u,
-                           cmap=cm.coolwarm,
+                           cmap=cm.viridis,
                            linewidth=0, antialiased=False)
-    return
+    ax.set(ylabel='$x_1$')
+    ax.set(xlabel='$x_2$')
+    ax.set(zlabel='$u$')
+    # plt.colorbar(surf)
+    if save_path is not None:
+        plt.savefig(save_path+'/policy.pdf')
+
+
+def cl_simulate(A, B, net, nstep=50, x0=2*np.ones([2, 1]), save_path=None):
+    """
+
+    :param A:
+    :param B:
+    :param net:
+    :param nstep:
+    :param x0:
+    :return:
+    """
+    A = A.detach().numpy()
+    B = B.detach().numpy()
+    x = x0
+    X = [x]
+    U = []
+    for k in range(nstep+1):
+        x_torch = torch.tensor(x).float().transpose(0, 1)
+        u = net(x_torch).detach().numpy()
+        x = np.matmul(A, x) + np.matmul(B, u)
+        X.append(x)
+        U.append(u)
+    Xnp = np.asarray(X)[:, :, 0]
+    Unp = np.asarray(U)[:, :, 0]
+
+    fig, ax = plt.subplots(2, 1)
+    ax[0].plot(Xnp, label='x', linewidth=2)
+    ax[0].set(ylabel='$x$')
+    ax[0].set(xlabel='time')
+    ax[0].grid()
+    ax[0].set_xlim(0, nstep)
+    ax[1].plot(Unp, label='u', drawstyle='steps',  linewidth=2)
+    ax[1].set(ylabel='$u$')
+    ax[1].set(xlabel='time')
+    ax[1].grid()
+    ax[1].set_xlim(0, nstep)
+    plt.tight_layout()
+    if save_path is not None:
+        plt.savefig(save_path+'/closed_loop_dpc.pdf')
+
 
 
 def lpv_batched(fx, x):
@@ -131,11 +184,66 @@ def lpv_batched(fx, x):
     return Astar, bstar, Aprime_mats, bprimes, activation_mats
 
 
+def compute_eigenvalues(matrices):
+    eigvals = []
+    for m in matrices:
+        assert len(m.shape) == 2
+        if not m.shape[0] == m.shape[1]:
+            s = np.linalg.svd(m.T, compute_uv=False)
+            lmbda = np.sqrt(s)
+        else:
+            lmbda, _ = np.linalg.eig(m.T)
+        eigvals += [lmbda]
+    return eigvals
 
 
-def check_stability(A, B, net):
+def plot_eigenvalues(eigvals, ax=None, fname=None):
+    if type(eigvals) == list:
+        eigvals = np.concatenate(eigvals)
+
+    if ax is None:
+        _, ax = plt.subplots(1, 1)
+
+    ax.clear()
+    ax.set_ylim(-1.5, 1.5)
+    ax.set_xlim(-1.5, 1.5)
+    ax.set_aspect(1)
+    ax.set_facecolor(DENSITY_FACECLR)
+    patch = mpatches.Circle(
+        (0, 0),
+        radius=1,
+        alpha=0.6,
+        fill=False,
+        ec=(0, 0.7, 1, 1),
+        lw=2,
+    )
+    ax.add_patch(patch)
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        sns.kdeplot(
+            x=eigvals.real,
+            y=eigvals.imag,
+            fill=True,
+            levels=50,
+            thresh=0,
+            cmap=DENSITY_PALETTE,
+            ax=ax,
+        )
+    """
+    sns.scatterplot(
+        x=eigvals.real, y=eigvals.imag, alpha=0.5, ax=ax, color="white", s=7
+    )
+    plt.tight_layout()
+
+    if fname is not None:
+        plt.savefig(fname)
+        plt.close()
+
+    return [ax]
+
+def check_cl_stability(A, B, net):
     return
-
 
 
 
@@ -161,8 +269,8 @@ if __name__ == "__main__":
     umax = 1
     xmin = -10
     xmax = 10
-    xN_min = -1.0
-    xN_max = 1.0
+    xN_min = -0.1
+    xN_max = 0.1
 
     """
     # # #  dataset 
@@ -203,7 +311,9 @@ if __name__ == "__main__":
                       [0.0, 1.0]])
     B = torch.tensor([[1.0],
                       [0.5]])
-    C = torch.tensor([[1.0, 1.0]])
+    C = torch.tensor([[1.0, 0.0],
+                      [0.0, 1.0]])
+    # C = torch.tensor([[1.0, 1.0]])
     dynamics_model.fx.linear.weight = torch.nn.Parameter(A)
     dynamics_model.fu.linear.weight = torch.nn.Parameter(B)
     dynamics_model.fy.linear.weight = torch.nn.Parameter(C)
@@ -347,7 +457,9 @@ if __name__ == "__main__":
     best_model = trainer.train()
 
     # TODO: generalize to plot N-step ahead policy
-    plot_policy(policy.net)
+    plot_policy(policy.net, save_path='test_control')
+    cl_simulate(A, B, policy.net, nstep=40,
+                x0=1.5*np.ones([2, 1]), save_path='test_control')
 
     # TODO: eigenvalue plots + closed loop trajectories
     # simple scripts or check simulator
