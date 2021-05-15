@@ -44,17 +44,17 @@ def arg_dpc_problem(prefix=''):
     gp.add("-nsteps", type=int, default=1,
            help="prediction horizon.")
     gp.add("-Qx", type=float, default=1.0,
-           help="state weight.")
+           help="state weight.")                # tuned value: 1.0
     gp.add("-Qu", type=float, default=1.0,
-           help="control action weight.")
+           help="control action weight.")       # tuned value: 1.0,  unstable for paper: 0.5
     gp.add("-Qn", type=float, default=1.0,
-           help="terminal penalty weight.")
+           help="terminal penalty weight.")     # tuned value: 1.0,  unstable for paper: 0.0
     gp.add("-Q_sub", type=float, default=0.0,
            help="regularization weight.")
     gp.add("-Q_con_x", type=float, default=10.0,
-           help="state constraints penalty weight.")
+           help="state constraints penalty weight.")  # tuned value: 10.0
     gp.add("-Q_con_u", type=float, default=20.0,
-           help="Input constraints penalty weight.")
+           help="Input constraints penalty weight.")  # tuned value: 20.0
     gp.add("-nx_hidden", type=int, default=20,
            help="Number of hidden states")
     gp.add("-n_layers", type=int, default=4,
@@ -485,5 +485,4 @@ if __name__ == "__main__":
     plot_loss(model, dataset, xmin=-5, xmax=5, save_path='test_control')
 
 
-
-    # TODO: eigenvalue plots + closed loop trajectories
+    # TODO: eigenvalue plots + norm surface
