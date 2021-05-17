@@ -126,9 +126,23 @@ ylim([-4 4])
 
 [X1,X2] = meshgrid(-5:.1:5);
 U = nan(length(X1),length(X1));
+Alpha = zeros(length(X1),length(X1));
+X1_feasible = [];
+X2_feasible = [];
 for i=1:length(X1)
     for j=1:length(X1)
-        U(i,j) = solution.xopt.feval([X1(i,j); X2(i,j)], 'primal'); 
+        x_k = [X1(i,j); X2(i,j)];
+        U(i,j) = solution.xopt.feval(x_k, 'primal'); 
+        xn = A*x_k + B*uopt;
+        if ~norm(x_k)==0
+            Alpha(i,j) = norm(xn)/norm(x_k);
+        else
+            Alpha(i,j) = 0;
+        end
+        if ~isnan(U(i,j))
+            X1_feasible = [X1_feasible; X1(i,j)];
+            X2_feasible = [X2_feasible; X2(i,j)];
+        end
     end
 end
 figure
@@ -138,5 +152,23 @@ ylabel('x_1')
 zlabel('u')
 s.EdgeColor = 'none';
 
+figure
+s = surf(X1,X2,Alpha)
+xlabel('x_2')
+ylabel('x_1')
+zlabel('u')
+s.EdgeColor = 'none';
 
+figure
+imagesc(rot90(Alpha))
+xlabel('x_2')
+ylabel('x_1')
+colorbar
+
+P = [X1_feasible, X2_feasible];
+[k,av] = convhull(P);
+figure
+plot(P(:,1),P(:,2),'*')
+hold on
+plot(P(k,1),P(k,2))
 
