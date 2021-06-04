@@ -21,6 +21,10 @@ Prototype code for the paper: https://arxiv.org/abs/2004.11184
 ![empc_policy.](double_integrator/test_control/empc_policy.png)  
 *Computed explicit MPC policy.*
 
+![empc_policy.](double_integrator/test_control/DeepMPC_simSysID_on_paper.png)  
+*Adaptive DPC of unknown linear system subject to disturbances.*
+
+
 
 ## Dependencies: Python Libraries
 See environment.yml to reproduce the Conda environment for running experiment 2. 
