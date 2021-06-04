@@ -29,7 +29,7 @@ Prototype code for the paper: https://arxiv.org/abs/2004.11184
 ## Dependencies: Python Libraries
 See environment.yml to reproduce the Conda environment for running experiment 2. 
 For experiment 1 install Neuromancer package with dependencies: 
-[double_integrator_DPC](https://github.com/pnnl/neuromancer/).
+[neuromancer](https://github.com/pnnl/neuromancer/).
 For GPU capabilities  install gpu version of Pytorch. 
 
 ## Files
@@ -38,7 +38,7 @@ For GPU capabilities  install gpu version of Pytorch.
 
 ### Control Example 1 
 - Double integrator example using the Neuromancer package:
-[double_integrator_DPC](https://github.com/pnnl/neuromancer/compare/double_integrator_DPC)
+[double_integrator_DPC_branch](https://github.com/pnnl/neuromancer/compare/double_integrator_DPC)
 
 
 ### Control Example 2
