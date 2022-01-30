@@ -7,7 +7,7 @@ def norm_max1(a):
     # Normalised [0,1]
     return a/np.max(a)
 
-labels = ['DLMPC', 'MPC', 'RMPC', 'SMPC', 'LQR', 'LQI', 'PPO2', 'A2C', 'ACKTR']
+labels = ['DPC', 'MPC', 'RMPC', 'SMPC', 'LQR', 'LQI', 'PPO2', 'A2C', 'ACKTR']
 # normalized metric nominal simulation
 MSE_ref_nominal = norm_max1(np.asarray([1.244, 1.398, 1.405, 1.398, 2.024, 1.954, 16.978, 10.682, 9.556]))
 MA_ene_nominal = norm_max1(np.asarray([1111, 897, 899, 897, 758, 899, 531, 732, 1496]))

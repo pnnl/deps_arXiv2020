@@ -592,7 +592,8 @@ if paper_plot:
     ax[0].fill_between(time_y, np.squeeze(DATA_Y_torch_min.T), np.squeeze(DATA_Y_torch_max.T), color='green', alpha=0.2)
     ax[0].plot(time_y,ymin, 'k--')
     ax[0].plot(time_y,ymax, 'k--')
-    ax[0].set(ylabel='$\mathcal{X}_4$ [$^\circ$C]')
+    ax[0].set(ylabel='$x$')
+    # ax[0].set(ylabel='$\mathcal{X}_4$ [$^\circ$C]')
     ax[0].tick_params(labelbottom=False)
     ax[0].axvspan(7, 14, facecolor='grey', alpha=0.2, zorder=-100)
     ax[0].axvspan(14, 21, facecolor='grey', alpha=0.4, zorder=-100)
@@ -602,17 +603,20 @@ if paper_plot:
     ax[1].fill_between(time_u, np.squeeze(DATA_U_torch_min.T), np.squeeze(DATA_U_torch_max.T), color='blue', alpha=0.2)
     ax[1].plot(time_u,umin, 'k--')
     ax[1].plot(time_u,umax, 'k--')
-    ax[1].set(ylabel='$\mathcal{U}$ [kW]')
+    # ax[1].set(ylabel='$\mathcal{U}$ [kW]')
+    ax[1].set(ylabel='$u$')
     ax[1].tick_params(labelbottom=False)
     ax[1].axvspan(7, 14, facecolor='grey', alpha=0.2, zorder=-100)
     ax[1].axvspan(14, 21, facecolor='grey', alpha=0.4, zorder=-100)
     ax[1].margins(0,0.1)
     ax[1].set(yticks=(0, 2000, 4000),yticklabels=('0', '2', '4'))
     
-    ax[2].plot(time_u,D_t[1:3,:].T)
+    # ax[2].plot(time_u,D_t[1:3,:].T)
+    ax[2].plot(time_u,D_t.T)
     ax[2].tick_params(labelbottom=True)
     ax[2].set_xlabel('Day')
-    ax[2].set(ylabel='$\mathcal{D}_{(2,3)}$ [kW]')
+    ax[2].set(ylabel='$d$')
+    # ax[2].set(ylabel='$\mathcal{D}_{(2,3)}$ [kW]')
     ax[2].tick_params(labelbottom=True)
     ax[2].axvspan(7, 14, facecolor='grey', alpha=0.2, zorder=-100)
     ax[2].axvspan(14, 21, facecolor='grey', alpha=0.4, zorder=-100)
@@ -623,12 +627,11 @@ if paper_plot:
                 bbox={'edgecolor': 'none','facecolor': 'grey', 'alpha': 0.0})
     ax[2].text(15, 1200, '              Test                ',
                    bbox={'edgecolor': 'none','facecolor': 'grey', 'alpha': 0.0})
-    
-    ax4 = ax[2].twinx()  # instantiate a second axes that shares the same x-axis
-    ax4.plot(time_u,D_t[0,:].T, color ='green')
-    ax4.tick_params(axis='y', labelcolor='green')
-    ax4.set_ylabel('$\mathcal{D}_1$ [$^\circ$C]', color='green')  
-    ax4.margins(0,0.1)
+    # ax4 = ax[2].twinx()  # instantiate a second axes that shares the same x-axis
+    # ax4.plot(time_u,D_t[0,:].T, color ='green')
+    # ax4.tick_params(axis='y', labelcolor='green')
+    # ax4.set_ylabel('$\mathcal{D}_1$ [$^\circ$C]', color='green')
+    # ax4.margins(0,0.1)
     
     steps = range(0, Sim_days_test+1, 1)
     days = np.array(list(range(Sim_days_test+1)))+7
