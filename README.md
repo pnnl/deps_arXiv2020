@@ -18,7 +18,7 @@ DPC combines the principles of model predictive control, reinforcement learning,
 ![cl_trajectories.](Example_1/test_control/cl_animation.gif)  
 *Example 1: Closed-loop trajectories of learned stabilizing neural control policy using DPC policy optimization.*
 
-![cl_trajectories_2.](Example_1/test_control/closed loop policy training.gif)  
+![cl_trajectories_2.](https://github.com/pnnl/deps_arXiv2020/blob/master/Example_1/test_control/closed%20loop%20policy%20training.gif)  
 *Example 1: Evolution of the closed-loop trajectories and DPC neural policy during training.*
 
 
