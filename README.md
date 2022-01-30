@@ -38,7 +38,7 @@ DPC combines the principles of model predictive control, reinforcement learning,
 *Example 3: Closed-loop reference tracking control trajectories for the quadcopter model controlled by DPC neural policy.*
 
 
-![example_4.](Example_4/figs/obstacle_avoidance.png)  
+![example_4.](https://github.com/pnnl/deps_arXiv2020/blob/master/Example_4/figs/obstacle_avoidance.PNG)  
 *Example 4: Obstacle avoidance with nonlinear constraints via learned DPC neural policy compared to online IPOPT solution.*
 
 
